@@ -4,16 +4,16 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #f5edf5;
-  background: #150d19;
-  font-synthesis: none;
   font-weight: 400;
+  color: #edf1ff;
+  background: #0b1325;
 }
 
 html {
   min-width: 320px;
   min-height: 100%;
-  background: #150d19;
+  scroll-behavior: smooth;
+  background: #0b1325;
 }
 
 body {
@@ -23,14 +23,13 @@ body {
 }
 
 button,
-input {
+a {
   font: inherit;
 }
 
 button:focus-visible,
-a:focus-visible,
-input:focus-visible {
-  outline: 2px solid #ff79a9;
+a:focus-visible {
+  outline: 2px solid #b7b9ff;
   outline-offset: 2px;
 }
 

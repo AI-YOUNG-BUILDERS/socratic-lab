@@ -1,321 +1,236 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import './App.css'
 
 function Icon({ name, size = 16 }) {
   const paths = {
-    spark: <><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-2-5.8L4 11l6-2.2L12 3Z" /><path d="m19 14 .9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14Z" /></>,
-    upload: <><path d="M12 16V4m0 0L7 9m5-5 5 5" /><path d="M20 16v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3" /></>,
-    file: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6M8 13h8m-8 4h8" /></>,
-    send: <><path d="m22 2-7 20-4-9-9-4 20-7Z" /><path d="M22 2 11 13" /></>,
+    spark: <><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z" /><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" /></>,
+    book: <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21V5.5Z" /><path d="M4 18a2 2 0 0 1 2-2h14M8 7h8m-8 4h6" /></>,
+    network: <><circle cx="12" cy="5" r="2" /><circle cx="6" cy="18" r="2" /><circle cx="18" cy="18" r="2" /><path d="m11 7-4 9m6-9 4 9M8 18h8" /></>,
+    brain: <><path d="M12 4a3 3 0 0 0-5.8 1.1A3.5 3.5 0 0 0 5 11a3 3 0 0 0 1 5.5A3.5 3.5 0 0 0 12 19V4Zm0 0a3 3 0 0 1 5.8 1.1A3.5 3.5 0 0 1 19 11a3 3 0 0 1-1 5.5A3.5 3.5 0 0 1 12 19" /><path d="M8 9h1m6 3h1m-8 3h1m5-8h1" /></>,
+    flask: <><path d="M9 3h6m-5 0v6l-5.5 9.2A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.8L14 9V3m-7 12h10" /></>,
+    calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18m-12 4h.01M15 14h.01M9 17h.01" /></>,
     chevron: <path d="m9 18 6-6-6-6" />,
-    bulb: <><path d="M9 18h6m-5 4h4m-2-20a7 7 0 0 0-4 12.7c.6.4 1 1.1 1 1.8h6c0-.7.4-1.4 1-1.8A7 7 0 0 0 12 2Z" /></>,
-    check: <path d="m5 12 4 4L19 6" />,
     arrow: <><path d="M7 17 17 7M7 7h10v10" /></>,
-    pause: <><path d="M8 5v14m8-14v14" /></>,
+    play: <path d="m8 5 12 7-12 7V5Z" />,
+    check: <path d="m5 12 4 4L19 6" />,
+    flame: <path d="M12 22c4 0 7-3 7-7 0-3-2-5-4-7 0 3-1 4-2 4 0-5-3-8-5-10 0 4-1 6-3 9-3 5 0 11 7 11Z" />,
+    rocket: <><path d="M4 16c-1.2 2-.9 4-.9 4s2 .3 4-.9m8.9-5.2-5-5c1.4-3.4 4-5.7 9-6 0 5-2.3 7.6-6 9ZM9 10l-3 .5L4 14l4 .5m5 5 .5-3 3.5-2-1 5-3 2Z" /><circle cx="15" cy="8" r="1" /></>,
+    person: <><circle cx="12" cy="8" r="4" /><path d="M5 21v-2a7 7 0 0 1 14 0v2" /></>,
+    cpu: <><rect x="5" y="5" width="14" height="14" rx="2" /><path d="M9 9h6v6H9zM9 2v3m6-3v3M9 19v3m6-3v3M2 9h3m-3 6h3m14-6h3m-3 6h3" /></>,
+    tree: <><circle cx="12" cy="5" r="2" /><circle cx="6" cy="18" r="2" /><circle cx="18" cy="18" r="2" /><path d="M12 7v5m-6 4v-3h12v3" /></>,
+    alert: <><path d="m12 3 10 18H2L12 3Z" /><path d="M12 9v5m0 3h.01" /></>,
+    lock: <><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3" /></>,
+    refresh: <><path d="M20 7v5h-5M4 17v-5h5" /><path d="M5.5 9A7 7 0 0 1 18 6l2 6M4 12l2 6a7 7 0 0 0 12.5-3" /></>,
+    download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m4-5 5 5 5-5m-5 5V3" /></>,
+    pulse: <><path d="M3 12h4l3-8 4 16 3-8h4" /></>,
+    target: <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></>,
   }
 
   return (
-    <svg
-      aria-hidden="true"
-      className="icon"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg aria-hidden="true" className="icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
       {paths[name]}
     </svg>
   )
 }
 
-const startingMessages = [
-  {
-    id: 1,
-    role: 'student',
-    time: '10:42 AM',
-    text: "I was implementing Dijkstra's algorithm for my assignment and noticed it computes the wrong shortest path when we insert a negative edge from vertex B to C. Why can't Dijkstra simply relax vertex C again once its distance gets updated?",
-  },
-  {
-    id: 2,
-    role: 'assistant',
-    time: '10:43 AM',
-    text: "Consider Dijkstra's fundamental assumption: once a node is extracted from the Priority Queue and added to Visited, what does the algorithm permanently assume about d[u]?",
-  },
+const tracks = [
+  { icon: 'play', type: 'COMPUTER SCIENCE', title: 'Data Structures & Algorithms', desc: 'Focusing on Pointer graphs, Recursion limits, and BST inversions.', progress: 74, verified: '18/24 Verified Concepts', student: 'Theo', next: 'Dangling Pointers', flag: '2 Gaps Spotted', flagType: 'red' },
+  { icon: 'cpu', type: 'SYSTEMS ARCHITECTURE', title: 'OS & Concurrency', desc: 'Multithreading, race conditions, atomic registers, and virtual memory.', progress: 45, verified: '12/26 Verified Concepts', student: 'Maya', next: 'Mutex Deadlocks', flag: 'Stable Flow', flagType: 'green' },
+  { icon: 'tree', type: 'MATHEMATICS FOR AI', title: 'Linear Algebra for ML', desc: 'Eigenvectors, matrix decompositions, transformation null spaces.', progress: 60, verified: '15/25 Verified Concepts', student: 'Julian', next: 'Vector Projections', flag: '1 Unresolved Analogy', flagType: 'gold' },
+]
+
+const sessions = [
+  { title: 'Stacks vs Heap Memory Allocation', track: 'Data Structures', persona: 'Theo (Peer, Lv. 2)', status: 'Mastered (94%)', state: 'good', duration: '18m 42s', output: '3 intuitive analogies verified' },
+  { title: 'Binary Search Tree Inversions', track: 'Algorithms', persona: 'Maya (Skeptic, Lv. 3)', status: 'Needs Review (1 Gap)', state: 'needs-review', duration: '24m 10s', output: 'Induction gap detected on edge cases' },
+  { title: 'Virtual Memory & Paging Tables', track: 'Operating Systems', persona: 'Theo (Peer, Lv. 2)', status: 'Mastered (91%)', state: 'good', duration: '32m 05s', output: 'Zero argument fallacies awarded' },
 ]
 
 function App() {
-  const [messages, setMessages] = useState(startingMessages)
-  const [prompt, setPrompt] = useState('')
-  const [showHint, setShowHint] = useState(false)
-  const [selectedChoice, setSelectedChoice] = useState(1)
-  const [weight, setWeight] = useState(-5)
-  const [allowRevisit, setAllowRevisit] = useState(false)
-  const [activeTab, setActiveTab] = useState('Force-directed')
-  const [fileName, setFileName] = useState('CS171_GraphAlgorithms.pdf')
-  const fileInput = useRef(null)
+  const [activeNav, setActiveNav] = useState('Learning Hub')
+  const [notice, setNotice] = useState('')
 
-  const submitPrompt = (event) => {
-    event.preventDefault()
-    const text = prompt.trim()
-    if (!text) return
-    setMessages((current) => [
-      ...current,
-      { id: Date.now(), role: 'student', time: 'Now', text },
-    ])
-    setPrompt('')
+  const showNotice = (message) => {
+    setNotice(message)
+    window.setTimeout(() => setNotice(''), 3000)
   }
 
-  const chooseFile = (event) => {
-    const file = event.target.files?.[0]
-    if (file) setFileName(file.name)
+  const exportLogs = () => {
+    const rows = [['Concept taught', 'Track', 'AI persona', 'Diagnostic state', 'Duration', 'Pedagogical output']]
+    sessions.forEach((session) => rows.push([session.title, session.track, session.persona, session.status, session.duration, session.output]))
+    const csv = rows.map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(',')).join('\n')
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    link.download = 'socraticlab-teaching-sessions.csv'
+    link.click()
+    window.setTimeout(() => URL.revokeObjectURL(link.href), 1000)
+    showNotice('Teaching session log exported.')
   }
 
   return (
     <div className="app-shell">
-      <header className="topbar">
-        <a className="brand" href="#workspace" aria-label="SocraticLab home">
-          <span className="brand-mark"><Icon name="spark" size={21} /></span>
-          <span className="brand-name">Socratic<span>Lab</span></span>
+      <aside className="sidebar">
+        <a className="brand" href="#home" aria-label="SocraticLab home">
+          <span className="brand-mark"><Icon name="spark" size={19} /></span>
+          <span><strong>SocraticLab</strong><small>REVERSE STUDIO</small></span>
         </a>
-        <span className="track-badge"><span className="status-dot" /> AI + EDUCATION TRACK</span>
-        <div className="topbar-actions">
-          <button className="attached-file" type="button" onClick={() => fileInput.current?.click()}>
-            <Icon name="file" size={14} />
-            <span>{fileName}</span>
-            <span className="file-status"><Icon name="check" size={11} /></span>
+        <nav aria-label="Study perspectives" className="sidebar-nav">
+          <p className="nav-heading">STUDY PERSPECTIVES</p>
+          {[
+            ['Learning Hub', 'book'],
+            ['Socratic Studio', 'spark'],
+            ['Concept Trees & Mastery', 'network'],
+            ['Pedagogical Jargon Insights', 'brain'],
+          ].map(([item, icon]) => (
+            <a
+              key={item}
+              className={`nav-link ${activeNav === item ? 'selected' : ''}`}
+              href={item === 'Concept Trees & Mastery' ? '#concept-graph' : '#home'}
+              onClick={() => setActiveNav(item)}
+            >
+              <Icon name={icon} size={14} /><span>{item}</span>
+            </a>
+          ))}
+        </nav>
+        <div className="persona">
+          <p className="nav-heading">TARGET AI PERSONA</p>
+          <button type="button" className="persona-button" onClick={() => showNotice('Persona set to Curious Peer (Lv. 2).')}>
+            <span>Curious Peer (Lv. 2)</span><b>Adaptive</b>
           </button>
-          <button className="upload-button" type="button" onClick={() => fileInput.current?.click()}>
-            <Icon name="upload" size={15} />
-            <span>Upload materials</span>
-            <small>PDF / PPTX / DOCX</small>
-          </button>
-          <input
-            ref={fileInput}
-            className="visually-hidden"
-            type="file"
-            accept=".pdf,.pptx,.docx"
-            onChange={chooseFile}
-            aria-label="Upload learning materials"
-          />
-          <button className="icon-button settings-button" type="button" aria-label="Workspace settings">
-            <span className="settings-glyph">☷</span>
-          </button>
-          <button className="avatar" type="button" aria-label="Account menu">A</button>
         </div>
-      </header>
+        <div className="health-card">
+          <div><strong>Socratic Health</strong><b>92%</b></div>
+          <div className="health-bar"><span /></div>
+          <small>Cognitive flow stable</small>
+        </div>
+      </aside>
 
-      <div className="workspace-layout" id="workspace">
-        <aside className="sidebar">
-          <div>
-            <p className="sidebar-label">WORKSPACE NAV</p>
-            <nav className="nav-list" aria-label="Workspace navigation">
-              <a className="nav-item active" href="#chat">Socratic Workspace</a>
-              <a className="nav-item" href="#concept-map">Knowledge Graph</a>
-              <a className="nav-item" href="#materials">Curated Materials</a>
-              <a className="nav-item" href="#sandbox">Algorithmic Drills</a>
-            </nav>
-          </div>
-          <div className="engine-status">
-            <span className="status-dot" />
-            <div><strong>FEATHERLESS NODE</strong><small>Latency: 14ms · 70B</small></div>
-          </div>
-        </aside>
+      <main className="main-area" id="home">
+        <header className="topbar">
+          <div className="topic-pill"><small>ACTIVE TOPIC</small><span>Pointers &amp; Dynamic Memory in C++</span></div>
+          <div className="topbar-pill streak"><Icon name="flame" size={13} /><span><b>4-Day Streak</b></span></div>
+          <div className="topbar-pill saved"><span className="save-dot" /><b>Draft Saved</b></div>
+          <div className="topic-pill secondary-topic"><small>ACTIVE TOPIC</small><span>Pointers &amp; Dynamic Memory in C++</span></div>
+          <div className="topbar-pill streak secondary-streak"><Icon name="flame" size={13} /><span><b>4-Day Streak</b></span></div>
+          <div className="topbar-pill saved"><span className="save-dot" /><b>Draft Saved</b></div>
+        </header>
 
-        <main className="work-area">
-          <section className="chat-column" id="chat" aria-label="Socratic chat workspace">
-            <div className="learning-card">
-              <div className="breadcrumbs">Computer Science <span>/</span> CS171 <span>/</span> Graph Algorithms <span>/</span></div>
-              <div className="learning-heading">
-                <div>
-                  <p className="eyebrow"><Icon name="spark" size={13} /> DIALECTIC MODE: ACTIVE PROBING</p>
-                  <span className="objective-label">LEARNING OBJECTIVE</span>
-                </div>
-                <strong>Proving greedy invariant correctness under negative weights</strong>
+        <div className="dashboard">
+          <section className="welcome-card">
+            <div className="welcome-copy">
+              <p className="eyebrow"><span className="ready-dot" /> SOCRATIC ENGINE READY <i>Semester 2 · Fall Track</i></p>
+              <h1>Welcome back, Alex!</h1>
+              <p>Your AI agents are ready for today’s sessions. Try to master a concept, teach it from first principles.</p>
+              <div className="welcome-actions">
+                <button className="button primary" type="button" onClick={() => showNotice('New teaching session ready. Choose a subject track to begin.')}>＋ Start New Teaching Session</button>
+                <button className="button quiet" type="button" onClick={() => showNotice('Resuming: Pointers & Heap Memory (Theo).') }><Icon name="play" size={12} /> Resume: Pointers &amp; Heap Memory (Theo)</button>
               </div>
             </div>
+            <div className="welcome-metrics">
+              <div className="metric-card streak-metric"><span className="metric-icon flame"><Icon name="flame" size={17} /></span><div><strong>7-Day Streak</strong><small><b>840 XP</b> · 14 Concepts Verified</small></div></div>
+              <div className="metric-card level-metric"><span className="metric-icon rocket"><Icon name="rocket" size={17} /></span><div><strong>BANKaiTive Engine (Lv. 4)</strong><div className="xp-bar"><span /></div><small>320 XP to Lv. 5</small></div></div>
+            </div>
+            <span className="online-status"><i /> Cognitive Synthesis Engine Online</span>
+          </section>
 
-            <div className="conversation">
-              <div className="message-meta">
-                <span className="student-avatar">AM</span>
-                <span><b>Alex M.</b> (Student)</span>
-                <time>10:42 AM</time>
-              </div>
-              {messages.map((message) => message.role === 'student' ? (
-                <div className="student-message" key={message.id}>
-                  {message.text}
+          <section className="inquiries-section">
+            <div className="section-heading">
+              <h2><Icon name="person" size={16} /> Pending AI Peer Inquiries <span className="count-pill">2 Awaiting Socratic Answers</span></h2>
+              <p>Responses calibrate AI student mastery models</p>
+            </div>
+            <div className="inquiry-grid">
+              <article className="inquiry-card theo-card">
+                <div className="peer-icon"><Icon name="person" size={19} /><i>!</i></div>
+                <div className="inquiry-content">
+                  <div className="inquiry-top"><strong>Theo (Curious Peer • Lv. 2)</strong><time>12m ago</time></div>
+                  <small className="topic-label">C++ POINTERS &amp; MEMORY</small>
+                  <p>“Alex, what actually happens to the stack pointer when a function returns without calling delete on raw allocated memory?”</p>
+                  <div className="inquiry-bottom"><span className="warning-text">◉ Clarification Needed: Memory Leaks</span><button type="button" className="button tiny-primary" onClick={() => showNotice('Opening Socratic reply studio for Theo.')}>Reply in Studio <Icon name="chevron" size={12} /></button></div>
                 </div>
-              ) : (
-                <article className="ai-message" key={message.id}>
-                  <div className="ai-message-head">
-                    <span className="ai-avatar"><Icon name="spark" size={14} /></span>
-                    <strong>Socratic Engine</strong>
-                    <span className="model-badge">FEATHERLESS-LLM-INFERENCE</span>
-                    <time>{message.time}</time>
-                  </div>
-                  <div className="ai-card">
-                    <p className="diagnostic-label">DIAGNOSTIC INVARIANT PROBE</p>
-                    <p className="probe-question">{message.text}</p>
-                    <div className="source-card" id="materials">
-                      <div className="source-heading"><Icon name="file" size={14} /> <strong>{fileName}</strong><span>· Slide 18, Page 42</span></div>
-                      <span className="rag-label">RAG Grounded</span>
-                      <p>“Lemma 24: If all edge weights <code>w(u, v) ≥ 0</code>, then for each vertex <code>v ∈ S</code>, <code>d(v) = δ(s, v)</code>, at the moment it is marked settled.”</p>
-                    </div>
-                    <p className="choice-prompt">SELECT THE INVARIANT THAT BREAKS WHEN W(U, V) &lt; 0:</p>
-                    <div className="choice-list" role="group" aria-label="Choose an invariant">
-                      <button
-                        className={`choice-option ${selectedChoice === 0 ? 'selected' : ''}`}
-                        type="button"
-                        onClick={() => setSelectedChoice(0)}
-                      >
-                        <span className="choice-radio">{selectedChoice === 0 && <Icon name="check" size={12} />}</span>
-                        <span>A. The priority queue underflows on negative keys</span>
-                        {selectedChoice === 0 && <span className="selected-tag">Selected</span>}
-                      </button>
-                      <button
-                        className={`choice-option ${selectedChoice === 1 ? 'selected' : ''}`}
-                        type="button"
-                        onClick={() => setSelectedChoice(1)}
-                      >
-                        <span className="choice-radio">{selectedChoice === 1 && <Icon name="check" size={12} />}</span>
-                        <span>B. The greedy choice guarantee: <code>d[u]</code> is no longer guaranteed to be minimal when extracted</span>
-                        {selectedChoice === 1 && <span className="selected-tag">Selected</span>}
-                      </button>
-                      <button
-                        className={`choice-option ${selectedChoice === 2 ? 'selected' : ''}`}
-                        type="button"
-                        onClick={() => setSelectedChoice(2)}
-                      >
-                        <span className="choice-radio">{selectedChoice === 2 && <Icon name="check" size={12} />}</span>
-                        <span>C. The graph becomes disconnected</span>
-                        {selectedChoice === 2 && <span className="selected-tag">Selected</span>}
-                      </button>
-                    </div>
-                    <button className="hint-button" type="button" onClick={() => setShowHint((value) => !value)}>
-                      <Icon name="bulb" size={14} />
-                      {showHint ? 'Hide conceptual hint' : 'Reveal a conceptual hint'}
-                      <Icon name="chevron" size={13} />
-                    </button>
-                    {showHint && (
-                      <div className="hint-content">
-                        Think about the order in which vertices become settled. Could a path discovered later still offer a cheaper route back to a vertex you already finalized?
-                      </div>
-                    )}
-                  </div>
+              </article>
+              <article className="inquiry-card maya-card">
+                <div className="peer-icon"><Icon name="person" size={19} /><i>✓</i></div>
+                <div className="inquiry-content">
+                  <div className="inquiry-top"><strong>Maya (Skeptical Interlocutor • Lv. 3)</strong><time>1h ago</time></div>
+                  <small className="topic-label">OPERATING SYSTEMS CONCURRENCY</small>
+                  <p>“Can a deadlock occur if both threads acquire their nested mutexes in the exact same strict hierarchical order? Prove it.”</p>
+                  <div className="inquiry-bottom"><span className="success-text">✓ Ready for Proof by Analogy</span><button type="button" className="button quiet tiny" onClick={() => showNotice('Starting a session with Maya.')}>Start Session <Icon name="chevron" size={12} /></button></div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section className="tracks-section" id="tracks">
+            <div className="section-heading">
+              <h2><Icon name="flask" size={16} /> Active Teaching Tracks</h2>
+              <a className="view-all" href="#tracks">VIEW ALL SUBJECTS <Icon name="arrow" size={12} /></a>
+            </div>
+            <div className="track-grid">
+              {tracks.map((track) => (
+                <article className="track-card" key={track.title}>
+                  <div className="track-card-top"><span className={`track-icon ${track.icon}`}><Icon name={track.icon} size={18} /></span><span className={`track-flag ${track.flagType}`}>{track.flag}</span></div>
+                  <small className="track-type">{track.type}</small>
+                  <h3>{track.title}</h3>
+                  <p className="track-description">{track.desc}</p>
+                  <div className="mastery-label"><span>Mastery Score</span><b>{track.progress}% Verified</b></div>
+                  <div className="mastery-bar"><span style={{ width: `${track.progress}%` }} /></div>
+                  <p className="verified-count">{track.verified}<span> AI Student: {track.student}</span></p>
+                  <div className="track-next"><span><small>Next In Line</small><b>{track.next}</b></span><button type="button" className="button quiet tiny" onClick={() => showNotice(`Entering ${track.title} studio.`)}>Enter Studio</button></div>
                 </article>
               ))}
             </div>
-
-            <form className="prompt-composer" onSubmit={submitPrompt}>
-              <div className="composer-tools">
-                <span><span className="terminal-prompt">&gt;_</span> INTERACTIVE SOCRATIC TERMINAL</span>
-                <div><button type="button">＋ Math/LaTeX</button><button type="button">＋ Code Snippet</button></div>
-              </div>
-              <div className="composer-input-wrap">
-                <input
-                  value={prompt}
-                  onChange={(event) => setPrompt(event.target.value)}
-                  placeholder="Because the priority queue permanently pops the minimum…"
-                  aria-label="Ask SocraticLab a question"
-                />
-                <button className="send-button" type="submit">Submit reasoning <Icon name="send" size={14} /></button>
-              </div>
-              <p className="composer-note"><span>ⓘ</span> SocraticLab guides via questions and mental models; it does not hand you your homework solutions.</p>
-            </form>
           </section>
 
-          <aside className="right-column">
-            <section className="concept-section" id="concept-map">
-              <div className="section-title-row">
-                <div className="section-title"><Icon name="spark" size={16} /><span>KNOWLEDGE GRAPH<br />REASONING PATH</span></div>
-                <span className="focus-badge"><span className="status-dot" /> DIAGNOSTIC FOCUS: ACTIVE</span>
-              </div>
-              <div className="graph-toolbar">
-                {['Force-directed', 'Tree Hierarchy', 'Edge Weights'].map((tab) => (
-                  <button
-                    className={activeTab === tab ? 'active' : ''}
-                    type="button"
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                  >
-                    {tab}
-                  </button>
-                ))}
-                <button className="graph-icon-button" type="button" aria-label="Expand concept graph">⛶</button>
-                <button className="graph-icon-button" type="button" aria-label="Search concept graph">⌕</button>
-              </div>
-              <div className="graph-canvas">
-                <svg className="graph-lines" viewBox="0 0 420 280" preserveAspectRatio="none" aria-hidden="true">
-                  <path d="M90 70 C110 105 130 120 165 145" />
-                  <path d="M165 145 C185 115 220 105 250 95" />
-                  <path d="M165 145 C220 145 265 135 310 120" />
-                  <path d="M165 145 C150 180 105 200 75 220" />
-                  <path d="M250 95 C275 95 295 100 310 120" className="dashed-edge" />
-                  <circle cx="165" cy="145" r="42" className="node-halo" />
-                </svg>
-                <div className="graph-node node-theory"><span className="node-check">✓</span> Graph Theory</div>
-                <div className="graph-node node-greedy"><span className="node-pulse" /> Greedy Choice Property</div>
-                <div className="graph-node node-queue">Min-Heap Queue</div>
-                <div className="graph-node node-bellman">Bellman-Ford</div>
-                <div className="graph-node node-relax">D(V) Relaxation</div>
-                <div className="graph-count">5 Nodes <span>·</span> 4 Dependencies</div>
-              </div>
-              <p className="graph-caption">{activeTab === 'Force-directed' ? 'Explore how these ideas connect.' : `Viewing ${activeTab.toLowerCase()} layout.`}</p>
-            </section>
-
-            <section className="simulation-card" id="sandbox">
-              <div className="simulation-heading">
-                <span className="bolt-icon">ϟ</span>
-                <div><h2>EDGE CASE SIMULATION</h2><p>DIJKSTRA VS. NEGATIVE WEIGHT ANOMALY</p></div>
-              </div>
-              <p className="hypothesis"><strong>Hypothesis:</strong> What if edge <code>A → B</code> has an edge weight of <b>{weight}</b>? Observe how early visitation settlement creates algorithmic blindness.</p>
-              <div className="slider-heading">
-                <label htmlFor="edge-weight">Weight w(A, B)</label>
-                <span className="weight-value">{weight}</span>
-              </div>
-              <input
-                id="edge-weight"
-                className="weight-slider"
-                type="range"
-                min="-10"
-                max="10"
-                value={weight}
-                onChange={(event) => setWeight(Number(event.target.value))}
-              />
-              <div className="slider-ticks"><span>-10 (Extreme Negative)</span><span>0</span><span>+10 (Positive)</span></div>
-              <button
-                className="revisit-toggle-row"
-                type="button"
-                role="switch"
-                aria-checked={allowRevisit}
-                onClick={() => setAllowRevisit((value) => !value)}
-              >
-                <span><strong>Allow Re-visitation (SPFA Mode)</strong><small>Re-enqueue settled vertices if a shorter path is found</small></span>
-                <span className={`toggle ${allowRevisit ? 'on' : ''}`}><span /></span>
-              </button>
-              <div className="memory-heading">LIVE MEMORY: VISITED ARRAY STATE</div>
-              <div className="memory-grid">
-                <div><strong>Node S</strong><span>settled</span><b>(0)</b></div>
-                <div className="invalid"><strong>Node A</strong><span>settled</span><b>{weight - 2}</b></div>
-                <div><strong>Node C</strong><span>{allowRevisit ? 're-queued' : 'unvisited'}</span><b>{allowRevisit ? 'updating' : '∞'}</b></div>
-              </div>
-              <div className={`alert-card ${allowRevisit ? 'resolved' : ''}`}>
-                <span className="alert-symbol">{allowRevisit ? '✓' : '△'}</span>
-                <div>
-                  <strong>{allowRevisit ? 'RE-VISITATION ENABLED' : 'INVARIANT VIOLATION TRIGGERED'}</strong>
-                  <p>{allowRevisit ? 'Settled vertices can be re-enqueued when a shorter path is discovered.' : `Suboptimal path S → A → B (Cost = ${weight - 2}) discovered after Node B was already permanently marked as settled.`}</p>
+          <section className="graph-section" id="concept-graph">
+            <div className="graph-header">
+              <div><h2><Icon name="network" size={16} /> Concept Trees &amp; Live Mastery Graph</h2><p>First-principles dependency mapping generated from your teaching conversations.</p></div>
+              <div className="graph-legend"><span className="green"><Icon name="check" size={12} /> 42 Mastered</span><span><Icon name="refresh" size={12} /> 8 In Progress</span><span className="orange"><Icon name="alert" size={12} /> 3 Gaps Spotted</span><span className="muted"><Icon name="lock" size={11} /> 15 Locked</span></div>
+            </div>
+            <div className="concept-flow">
+              {[
+                { icon: 'check', name: 'Pointers Basics', state: '100% Mastered', style: 'done' },
+                { icon: 'refresh', name: 'Stack vs Heap', state: 'In Progress', style: 'progress' },
+                { icon: 'alert', name: 'Memory Leaks', state: 'Gap Spotted', style: 'gap' },
+                { icon: 'lock', name: 'Smart Pointers', state: 'Locked', style: 'locked' },
+              ].map((node) => (
+                <div className={`concept-node ${node.style}`} key={node.name}>
+                  <span className="node-icon"><Icon name={node.icon} size={18} /></span>
+                  <b>{node.name}</b><small>{node.state}</small>
                 </div>
-              </div>
-              <button className="run-button" type="button" onClick={() => setWeight((current) => (current < 0 ? current + 1 : -5))}>
-                <span>▷</span> Run Step-by-Step Relaxation <Icon name="arrow" size={13} />
-              </button>
-            </section>
-          </aside>
-        </main>
-      </div>
+              ))}
+            </div>
+            <div className="graph-footer"><span>Path: Foundations of Systems Architecture &gt; Memory Management</span><button className="button quiet tiny" type="button" onClick={() => showNotice('Interactive concept graph opened.')}>Open Full Interactive Concept Graph <Icon name="arrow" size={12} /></button></div>
+          </section>
+
+          <section className="sessions-section">
+            <div className="section-heading">
+              <h2><Icon name="calendar" size={15} /> Recent Teaching Sessions (Feynman Log)</h2>
+              <button type="button" className="export-button" onClick={exportLogs}>EXPORT LOGS <Icon name="download" size={12} /></button>
+            </div>
+            <div className="sessions-table-wrap">
+              <table>
+                <thead><tr><th>CONCEPT TAUGHT</th><th>AI PERSONA</th><th>DIAGNOSTIC STATE</th><th>DURATION</th><th>PEDAGOGICAL OUTPUT</th><th>ACTIONS</th></tr></thead>
+                <tbody>{sessions.map((session, index) => (
+                  <tr key={session.title}>
+                    <td><strong>{session.title}</strong><small>Track: {session.track}</small></td>
+                    <td><span className={`persona-dot persona-${index}`} />{session.persona}</td>
+                    <td><span className={`state-pill ${session.state}`}>{session.state === 'good' ? '✓' : '●'} {session.status}</span></td>
+                    <td>{session.duration}</td>
+                    <td className={session.state === 'needs-review' ? 'output-warning' : ''}>{session.output}</td>
+                    <td className="row-actions"><button type="button" onClick={() => showNotice(`Reviewing notes for ${session.title}.`)}>Review<br />Notes</button><button type="button" className={index === 1 ? 'emphasis' : ''} onClick={() => showNotice(index === 1 ? `Addressing the mastery gap in ${session.title}.` : `Re-teaching ${session.title}.`)}>{index === 1 ? <>Address<br />Gap</> : <>Re-<br />teach</>}</button></td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="summary-stats" aria-label="Learning summary">
+            <article><span className="stat-icon pencil">✎</span><div><strong>89.2%</strong><small>Jargon-Free Simplicity Index</small></div></article>
+            <article><span className="stat-icon pulse"><Icon name="pulse" size={19} /></span><div><strong>3.4x Faster</strong><small>Retention vs. Passive Reading</small></div></article>
+            <article><span className="stat-icon target"><Icon name="target" size={19} /></span><div><strong>38 Queries Solved</strong><small>AI Student Misconceptions Cleared</small></div></article>
+          </section>
+        </div>
+      </main>
+      {notice && <div className="toast" role="status">{notice}</div>}
     </div>
   )
 }
