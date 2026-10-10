@@ -32,6 +32,10 @@ PREVIEW:
 
 3. Restart the Vite dev server (`npm run dev`) and use **Ask Gemini** in the dashboard.
 
+The study partner uses a Socratic approach: it gives a concise hint or explanation, then asks the student to reason through a next step. Replies stay in the conversation so Gemini can respond to the student's thinking instead of producing a copy-ready assignment answer.
+
+SocraticLab opens in light mode. Use the theme button in the sidebar to switch between light and dark mode; the selected theme is saved in this browser.
+
 The app sends requests to Gemini Flash using the browser `fetch()` API. The `VITE_` environment variable is bundled into frontend code and is **not a secret**: browser users can retrieve it. Direct browser access is for a short-lived hackathon demo only. Use a separate low-quota key, restrict it to the Generative Language API and allowed website referrers in Google AI Studio/Cloud Console, and rotate/delete it after the demo. Never commit `.env.local`.
 
 For a public deployment or real users, put the Gemini call behind a server-side endpoint and keep the key in that server's environment; frontend environment variables cannot keep an API key secret.

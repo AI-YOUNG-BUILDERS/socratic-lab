@@ -2,6 +2,23 @@ import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 const STORAGE_KEY = 'socraticlab-demo-v1'
+const THEME_STORAGE_KEY = 'socraticlab-theme'
+
+function loadTheme() {
+  try {
+    return window.localStorage.getItem(THEME_STORAGE_KEY) === 'dark' ? 'dark' : 'light'
+  } catch (error) {
+    console.error('Could not load SocraticLab theme preference from localStorage.', error)
+    return 'light'
+  }
+}
+
+function cleanGeminiFormatting(text) {
+  return text
+    .replace(/(^|\n)[ \t]*\*[ \t]+/g, '$1• ')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,!?:;])/g, '$1$2')
+}
 
 function Icon({ name, size = 16 }) {
   const paths = {
@@ -26,6 +43,8 @@ function Icon({ name, size = 16 }) {
     download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m4-5 5 5 5-5m-5 5V3" /></>,
     pulse: <><path d="M3 12h4l3-8 4 16 3-8h4" /></>,
     target: <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></>,
+    moon: <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5 8.5 8.5 0 1 0 20.5 14.5Z" />,
+    sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></>,
   }
 
   return (
@@ -107,19 +126,23 @@ function getTrackTitle(trackName) {
 
 function App() {
   const [data, setData] = useState(loadDemoData)
+  const [theme, setTheme] = useState(loadTheme)
   const [activeNav, setActiveNav] = useState('Learning Hub')
   const [notice, setNotice] = useState('')
   const [modal, setModal] = useState(null)
   const [sessionForm, setSessionForm] = useState({ concept: '', track: tracks[0].title, persona: personas[0] })
   const [reply, setReply] = useState('')
   const [geminiPrompt, setGeminiPrompt] = useState('')
-  const [geminiQuestion, setGeminiQuestion] = useState('')
-  const [geminiAnswer, setGeminiAnswer] = useState('')
+  const [geminiMessages, setGeminiMessages] = useState([])
   const [geminiError, setGeminiError] = useState('')
   const [geminiLoading, setGeminiLoading] = useState(false)
   const noticeTimer = useRef(null)
 
   useEffect(() => () => window.clearTimeout(noticeTimer.current), [])
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+  }, [theme])
 
   useEffect(() => {
     if (!modal) return undefined
@@ -163,8 +186,7 @@ function App() {
 
   const openGemini = () => {
     setGeminiPrompt('')
-    setGeminiQuestion('')
-    setGeminiAnswer('')
+    setGeminiMessages([])
     setGeminiError('')
     setModal({ type: 'gemini' })
   }
@@ -181,8 +203,6 @@ function App() {
 
     setGeminiLoading(true)
     setGeminiError('')
-    setGeminiQuestion(prompt)
-    setGeminiAnswer('')
     try {
       const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', {
         method: 'POST',
@@ -192,9 +212,15 @@ function App() {
         },
         body: JSON.stringify({
           systemInstruction: {
-            parts: [{ text: 'You are a helpful Socratic study partner. Explain concepts clearly, ask thoughtful questions when useful, and do not claim to be a human.' }],
+            parts: [{ text: 'You are a Socratic study partner helping a student learn, not a tool for producing copy-ready homework. For every reply, first respond briefly and helpfully to what the student said, using a small hint, a simple explanation, or an example when useful. Never provide a complete essay, finished assignment, or answer intended to be submitted as the student’s own work. Instead, break problems into manageable steps and ask exactly one specific, open-ended question that makes the student explain, predict, compare, or try the next step. Always end by asking the student a question, including when they ask a direct factual question. Adapt to their answer: acknowledge sound reasoning, gently correct misconceptions, and give another hint before asking the next question. Keep replies concise, supportive, and age-appropriate. Do not use asterisks or Markdown formatting; use plain paragraphs or numbered lists. Do not claim to be human.' }],
           },
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          contents: [
+            ...geminiMessages.map((message) => ({
+              role: message.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: message.text }],
+            })),
+            { role: 'user', parts: [{ text: prompt }] },
+          ],
           generationConfig: { temperature: 0.7, maxOutputTokens: 700 },
         }),
       })
@@ -207,7 +233,11 @@ function App() {
         .filter(Boolean)
         .join('\n')
       if (!answer) throw new Error('Walang text response mula sa Gemini. Subukan ulit gamit ang ibang tanong.')
-      setGeminiAnswer(answer)
+      setGeminiMessages((messages) => [
+        ...messages,
+        { role: 'user', text: prompt },
+        { role: 'assistant', text: cleanGeminiFormatting(answer) },
+      ])
       setGeminiPrompt('')
     } catch (error) {
       console.error('Gemini request failed.', error)
@@ -264,6 +294,17 @@ function App() {
     saveData({ ...data, persona: nextPersona }, `AI persona: ${nextPersona}.`)
   }
 
+  const toggleTheme = () => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(nextTheme)
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme)
+    } catch (error) {
+      console.error('Could not save SocraticLab theme preference to localStorage.', error)
+      showNotice('Theme changed, but the preference could not be saved on this device.')
+    }
+  }
+
   const exportLogs = () => {
     const rows = [['Concept taught', 'Track', 'AI persona', 'Diagnostic state', 'Duration', 'Pedagogical output']]
     data.sessions.forEach((session) => rows.push([session.title, session.track, session.persona, session.status, session.duration, session.output]))
@@ -284,7 +325,7 @@ function App() {
   ]
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-theme={theme}>
       <aside className="sidebar">
         <a className="brand" href="#home" aria-label="SocraticLab home">
           <span className="brand-mark"><Icon name="spark" size={19} /></span>
@@ -314,16 +355,16 @@ function App() {
           <div className="health-bar"><span /></div>
           <small>Cognitive flow stable</small>
         </div>
+        <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>
+          <Icon name={theme === 'light' ? 'moon' : 'sun'} size={14} />
+          <span>{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>
+        </button>
       </aside>
 
       <main className="main-area" id="home">
         <header className="topbar">
           <div className="topic-pill"><small>ACTIVE TOPIC</small><span>Pointers &amp; Dynamic Memory in C++</span></div>
-          <div className="topbar-pill streak"><Icon name="flame" size={13} /><span><b>4-Day Streak</b></span></div>
-          <div className="topbar-pill saved"><span className="save-dot" /><b>Local Demo · Saved</b></div>
           <div className="topic-pill secondary-topic"><small>ACTIVE TOPIC</small><span>Pointers &amp; Dynamic Memory in C++</span></div>
-          <div className="topbar-pill streak secondary-streak"><Icon name="flame" size={13} /><span><b>4-Day Streak</b></span></div>
-          <div className="topbar-pill saved"><span className="save-dot" /><b>Local Demo · Saved</b></div>
         </header>
 
         <div className="dashboard">
@@ -335,12 +376,8 @@ function App() {
               <div className="welcome-actions">
                 <button className="button primary" type="button" onClick={() => startSession()}>＋ Start New Teaching Session</button>
                 <button className="button quiet" type="button" onClick={() => startSession({ concept: 'Pointers & Heap Memory', track: tracks[0].title })}><Icon name="play" size={12} /> Resume: Pointers &amp; Heap Memory (Theo)</button>
-                <button className="button quiet" type="button" onClick={openGemini}><Icon name="spark" size={12} /> Ask Gemini</button>
+                <button className="button quiet" type="button" onClick={openGemini}><Icon name="spark" size={12} /> Ask SocraticLab</button>
               </div>
-            </div>
-            <div className="welcome-metrics">
-              <div className="metric-card streak-metric"><span className="metric-icon flame"><Icon name="flame" size={17} /></span><div><strong>7-Day Streak</strong><small><b>{840 + Math.max(0, data.sessions.length - initialData.sessions.length) * 50} XP</b> · {14 + Math.max(0, data.sessions.length - initialData.sessions.length)} Concepts Verified</small></div></div>
-              <div className="metric-card level-metric"><span className="metric-icon rocket"><Icon name="rocket" size={17} /></span><div><strong>BANKaiTive Engine (Lv. 4)</strong><div className="xp-bar"><span style={{ width: `${Math.min(100, 67 + Math.max(0, data.sessions.length - initialData.sessions.length) * 3)}%` }} /></div><small>320 XP to Lv. 5</small></div></div>
             </div>
             <span className="online-status"><i /> Cognitive Synthesis Engine Online</span>
           </section>
@@ -474,15 +511,24 @@ function App() {
             <section className="demo-modal gemini-modal" role="dialog" aria-modal="true" aria-labelledby="gemini-modal-title">
               <button className="modal-close" type="button" aria-label="Close" onClick={() => setModal(null)}>×</button>
               <p className="eyebrow"><span className="ready-dot" /> GEMINI STUDY PARTNER</p>
-              <h2 id="gemini-modal-title">Ask Gemini</h2>
-              <p className="modal-description">Ask a study question and get a live response from Gemini Flash.</p>
-              {geminiQuestion && <div className="gemini-question"><b>You</b><p>{geminiQuestion}</p></div>}
-              {geminiAnswer && <div className="gemini-answer"><b>Gemini</b><p>{geminiAnswer}</p></div>}
+              <h2 id="gemini-modal-title">Ask SocraticLab</h2>
+              <p className="modal-description">Learn through hints and follow-up questions. Gemini will help you work it out instead of giving you a copy-ready answer.</p>
+              {geminiMessages.length > 0 && (
+                <div className="gemini-chat" aria-live="polite">
+                  {geminiMessages.map((message, index) => (
+                    <div className={`gemini-message ${message.role === 'assistant' ? 'gemini-answer' : 'gemini-question'}`} key={`${message.role}-${index}`}>
+                      <b>{message.role === 'assistant' ? 'Gemini' : 'You'}</b>
+                      <p>{message.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {geminiLoading && <p className="gemini-thinking" role="status">Gemini is thinking of a hint and a question...</p>}
               {geminiError && <p className="gemini-error" role="alert">{geminiError}</p>}
-              <form onSubmit={askGemini}>
-                <label htmlFor="gemini-prompt">Your question</label>
-                <textarea id="gemini-prompt" autoFocus required maxLength={2000} rows={3} value={geminiPrompt} onChange={(event) => setGeminiPrompt(event.target.value)} placeholder="e.g. Explain stack vs heap memory with an analogy..." />
-                <div className="modal-actions"><button className="button quiet" type="button" onClick={() => setModal(null)}>Close</button><button className="button primary" type="submit" disabled={geminiLoading || !geminiPrompt.trim()}>{geminiLoading ? 'Thinking...' : 'Send to Gemini'}</button></div>
+              <form className="gemini-input" onSubmit={askGemini}>
+                <label htmlFor="gemini-prompt">{geminiMessages.length > 0 ? 'Your response' : 'What are you working on?'}</label>
+                <textarea id="gemini-prompt" autoFocus required maxLength={2000} rows={3} value={geminiPrompt} onChange={(event) => setGeminiPrompt(event.target.value)} placeholder={geminiMessages.length > 0 ? 'Share your thinking or answer Gemini’s question...' : 'Ask about a topic or problem you want to understand...'} />
+                <div className="modal-actions"><button className="button quiet" type="button" onClick={() => setModal(null)}>Close</button><button className="button primary" type="submit" disabled={geminiLoading || !geminiPrompt.trim()}>{geminiLoading ? 'Thinking...' : geminiMessages.length > 0 ? 'Send reply' : 'Ask SocraticLab'}</button></div>
               </form>
             </section>
           )}
