@@ -20,6 +20,25 @@ function cleanGeminiFormatting(text) {
     .replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,!?:;])/g, '$1$2')
 }
 
+function ConceptDiagram() {
+  return (
+    <div className="concept-diagram" aria-label="Study concept diagram">
+      <svg viewBox="0 0 420 180" role="img" aria-hidden="true">
+        <rect x="16" y="18" width="388" height="144" rx="18" className="diagram-frame" />
+        <circle cx="90" cy="90" r="36" className="diagram-node concept" />
+        <circle cx="210" cy="52" r="28" className="diagram-node idea" />
+        <circle cx="210" cy="128" r="28" className="diagram-node idea" />
+        <circle cx="330" cy="90" r="38" className="diagram-node result" />
+        <path d="M126 90h56M210 80v-28M210 100v28M268 90h24" className="diagram-line" />
+        <text x="90" y="95" textAnchor="middle" className="diagram-label">Idea</text>
+        <text x="210" y="57" textAnchor="middle" className="diagram-label short">Hint</text>
+        <text x="210" y="133" textAnchor="middle" className="diagram-label short">Check</text>
+        <text x="330" y="95" textAnchor="middle" className="diagram-label">Answer</text>
+      </svg>
+    </div>
+  )
+}
+
 function Icon({ name, size = 16 }) {
   const paths = {
     spark: <><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z" /><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" /></>,
@@ -328,7 +347,9 @@ function App() {
     <div className="app-shell" data-theme={theme}>
       <aside className="sidebar">
         <a className="brand" href="#home" aria-label="SocraticLab home">
-          <span className="brand-mark"><Icon name="spark" size={19} /></span>
+          <span className="brand-mark">
+            <img src="/socratic-logo.png" alt="SocraticLab logo" className="brand-logo-image" />
+          </span>
           <span><strong>SocraticLab</strong><small>REVERSE STUDIO</small></span>
         </a>
         <nav aria-label="Study perspectives" className="sidebar-nav">
@@ -349,11 +370,6 @@ function App() {
           <button type="button" className="persona-button" onClick={cyclePersona} title="Click to switch AI persona">
             <span>{data.persona}</span><b>Change</b>
           </button>
-        </div>
-        <div className="health-card">
-          <div><strong>Socratic Health</strong><b>92%</b></div>
-          <div className="health-bar"><span /></div>
-          <small>Cognitive flow stable</small>
         </div>
         <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>
           <Icon name={theme === 'light' ? 'moon' : 'sun'} size={14} />
@@ -432,27 +448,6 @@ function App() {
             </div>
           </section>
 
-          <section className="graph-section" id="concept-graph">
-            <div className="graph-header">
-              <div><h2><Icon name="network" size={16} /> Concept Trees &amp; Live Mastery Graph</h2><p>First-principles dependency mapping generated from your teaching conversations.</p></div>
-              <div className="graph-legend"><span className="green"><Icon name="check" size={12} /> 42 Mastered</span><span><Icon name="refresh" size={12} /> 8 In Progress</span><span className="orange"><Icon name="alert" size={12} /> 3 Gaps Spotted</span><span className="muted"><Icon name="lock" size={11} /> 15 Locked</span></div>
-            </div>
-            <div className="concept-flow">
-              {[
-                { icon: 'check', name: 'Pointers Basics', state: '100% Mastered', style: 'done' },
-                { icon: 'refresh', name: 'Stack vs Heap', state: 'In Progress', style: 'progress' },
-                { icon: 'alert', name: 'Memory Leaks', state: 'Gap Spotted', style: 'gap' },
-                { icon: 'lock', name: 'Smart Pointers', state: 'Locked', style: 'locked' },
-              ].map((node) => (
-                <div className={`concept-node ${node.style}`} key={node.name}>
-                  <span className="node-icon"><Icon name={node.icon} size={18} /></span>
-                  <b>{node.name}</b><small>{node.state}</small>
-                </div>
-              ))}
-            </div>
-            <div className="graph-footer"><span>Path: Foundations of Systems Architecture &gt; Memory Management</span><button className="button quiet tiny" type="button" onClick={() => setModal({ type: 'graph' })}>Open Full Interactive Concept Graph <Icon name="arrow" size={12} /></button></div>
-          </section>
-
           <section className="sessions-section" id="sessions">
             <div className="section-heading">
               <h2><Icon name="calendar" size={15} /> Recent Teaching Sessions (Feynman Log)</h2>
@@ -475,11 +470,6 @@ function App() {
             </div>
           </section>
 
-          <section className="summary-stats" id="insights" aria-label="Learning summary">
-            <article><span className="stat-icon pencil">✎</span><div><strong>{data.sessions.length > initialData.sessions.length ? '89.8%' : '89.2%'}</strong><small>Jargon-Free Simplicity Index</small></div></article>
-            <article><span className="stat-icon pulse"><Icon name="pulse" size={19} /></span><div><strong>3.4x Faster</strong><small>Retention vs. Passive Reading</small></div></article>
-            <article><span className="stat-icon target"><Icon name="target" size={19} /></span><div><strong>{38 + Math.max(0, data.sessions.length - initialData.sessions.length)} Queries Solved</strong><small>AI Student Misconceptions Cleared</small></div></article>
-          </section>
         </div>
       </main>
 
@@ -510,24 +500,25 @@ function App() {
           {modal.type === 'gemini' && (
             <section className="demo-modal gemini-modal" role="dialog" aria-modal="true" aria-labelledby="gemini-modal-title">
               <button className="modal-close" type="button" aria-label="Close" onClick={() => setModal(null)}>×</button>
-              <p className="eyebrow"><span className="ready-dot" /> GEMINI STUDY PARTNER</p>
+              <p className="eyebrow"><span className="ready-dot" /> STUDY PARTNER</p>
               <h2 id="gemini-modal-title">Ask SocraticLab</h2>
-              <p className="modal-description">Learn through hints and follow-up questions. Gemini will help you work it out instead of giving you a copy-ready answer.</p>
+              <p className="modal-description">Learn through hints and follow-up questions. The study partner helps you work it out instead of giving you a copy-ready answer.</p>
               {geminiMessages.length > 0 && (
                 <div className="gemini-chat" aria-live="polite">
                   {geminiMessages.map((message, index) => (
                     <div className={`gemini-message ${message.role === 'assistant' ? 'gemini-answer' : 'gemini-question'}`} key={`${message.role}-${index}`}>
-                      <b>{message.role === 'assistant' ? 'Gemini' : 'You'}</b>
+                      <b>{message.role === 'assistant' ? 'Tutor' : 'You'}</b>
                       <p>{message.text}</p>
                     </div>
                   ))}
                 </div>
               )}
-              {geminiLoading && <p className="gemini-thinking" role="status">Gemini is thinking of a hint and a question...</p>}
+              {geminiLoading && <p className="gemini-thinking" role="status">The study partner is thinking of a hint and a question...</p>}
               {geminiError && <p className="gemini-error" role="alert">{geminiError}</p>}
               <form className="gemini-input" onSubmit={askGemini}>
                 <label htmlFor="gemini-prompt">{geminiMessages.length > 0 ? 'Your response' : 'What are you working on?'}</label>
-                <textarea id="gemini-prompt" autoFocus required maxLength={2000} rows={3} value={geminiPrompt} onChange={(event) => setGeminiPrompt(event.target.value)} placeholder={geminiMessages.length > 0 ? 'Share your thinking or answer Gemini’s question...' : 'Ask about a topic or problem you want to understand...'} />
+                <textarea id="gemini-prompt" autoFocus required maxLength={2000} rows={3} value={geminiPrompt} onChange={(event) => setGeminiPrompt(event.target.value)} placeholder={geminiMessages.length > 0 ? 'Share your thinking or answer the question...' : 'Ask about a topic or problem you want to understand...'} />
+                {geminiMessages.length > 0 && <ConceptDiagram />}
                 <div className="modal-actions"><button className="button quiet" type="button" onClick={() => setModal(null)}>Close</button><button className="button primary" type="submit" disabled={geminiLoading || !geminiPrompt.trim()}>{geminiLoading ? 'Thinking...' : geminiMessages.length > 0 ? 'Send reply' : 'Ask SocraticLab'}</button></div>
               </form>
             </section>

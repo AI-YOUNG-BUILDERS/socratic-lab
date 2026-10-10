@@ -43,25 +43,42 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  margin: 0 2px 38px;
+  margin: 0 2px 30px;
   color: var(--text);
   text-decoration: none;
 }
 
 .brand-mark {
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
-  color: #b5baff;
-  border-radius: 6px;
-  background: #151e39;
+  color: #f3f5ff;
+  background: transparent;
+  border-radius: 0;
+}
+
+.brand-logo-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .brand strong,
 .brand small { display: block; line-height: 1.1; }
-.brand strong { font-size: 12px; letter-spacing: -.35px; }
-.brand small { margin-top: 3px; color: #aeb7d2; font-size: 6px; font-weight: 700; letter-spacing: .13em; }
+.brand strong {
+  font-size: 13px;
+  letter-spacing: -.4px;
+}
+.brand small {
+  margin-top: 3px;
+  color: #aeb7d2;
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: .15em;
+}
 
 .sidebar-nav { display: grid; gap: 4px; }
 .nav-heading {
@@ -106,14 +123,6 @@
   cursor: pointer;
 }
 .persona-button b { padding: 2px 4px; color: #58dfbe; border-radius: 3px; background: rgba(65, 214, 175, .1); font-size: 6px; }
-.health-card { margin-top: auto; padding: 8px 7px; border-radius: 7px; background: #151e34; }
-.health-card > div:first-child { display: flex; justify-content: space-between; align-items: center; }
-.health-card strong { color: #dfe6fa; font: 7px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
-.health-card b { color: var(--green); font: 7px ui-monospace, SFMono-Regular, Menlo, monospace; }
-.health-card small { color: #98a4be; font: 7px ui-monospace, SFMono-Regular, Menlo, monospace; }
-.health-bar,.mastery-bar { overflow: hidden; border-radius: 8px; background: #26334c; }
-.health-bar { height: 4px; margin: 4px 0 4px; }
-.health-bar span { display: block; width: 92%; height: 100%; border-radius: inherit; background: var(--green); }
 .theme-toggle {
   min-height: 32px;
   margin-top: 10px;
@@ -310,15 +319,6 @@
 .row-actions { display: flex; gap: 4px; }
 .row-actions button { min-width: 35px; min-height: 24px; padding: 3px 5px; color: #d8dff1; border: 1px solid rgba(170, 184, 221, .04); border-radius: 4px; background: #202b43; font: inherit; font-size: 7px; line-height: 1.2; cursor: pointer; }
 .row-actions button.emphasis { color: #11162e; background: #b8bbff; }
-.summary-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
-.summary-stats article { min-height: 52px; padding: 8px 9px; display: flex; align-items: center; gap: 9px; border: 1px solid rgba(164, 181, 222, .04); border-radius: 10px; background: #172138; }
-.stat-icon { width: 28px; height: 28px; flex: 0 0 28px; display: grid; place-items: center; border-radius: 9px; background: #252e49; font-size: 16px; }
-.stat-icon.pencil { color: #c3c4ff; }
-.stat-icon.pulse { color: #4adcb4; background: #193039; }
-.stat-icon.target { color: #ffb65c; background: #342d2c; }
-.summary-stats strong,.summary-stats small { display: block; }
-.summary-stats strong { color: #e5eafd; font-size: 12px; line-height: 1.2; }
-.summary-stats small { margin-top: 3px; color: #8e9ab3; font: 6px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
 .toast { position: fixed; z-index: 5; right: 18px; bottom: 18px; max-width: min(360px, calc(100vw - 36px)); padding: 11px 15px; color: #eff2ff; border: 1px solid rgba(183, 185, 255, .2); border-radius: 8px; background: #222d46; box-shadow: 0 10px 32px rgba(0, 0, 0, .3); font-size: 10px; }
 
 .modal-backdrop {
@@ -390,6 +390,16 @@
 .gemini-question p,.gemini-answer p { margin: 7px 0 0; color: #d6ddef; font-size: 15px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
 .gemini-thinking { margin: 10px 0; color: #b3bdd2; font-size: 13px; }
 .gemini-input textarea { min-height: 120px; font-size: 14px; }
+.gemini-input .concept-diagram { margin-top: 10px; padding: 6px; border: 1px solid rgba(167, 183, 223, .12); border-radius: 12px; background: rgba(255, 255, 255, .02); }
+.gemini-input .concept-diagram svg { display: block; width: 100%; height: auto; }
+.gemini-input .diagram-frame { fill: rgba(255, 255, 255, .02); stroke: rgba(167, 183, 223, .18); stroke-width: 1.5; }
+.gemini-input .diagram-node { stroke: rgba(255, 255, 255, .2); stroke-width: 1.6; }
+.gemini-input .diagram-node.concept { fill: rgba(183, 185, 255, .22); }
+.gemini-input .diagram-node.idea { fill: rgba(83, 222, 183, .18); }
+.gemini-input .diagram-node.result { fill: rgba(255, 180, 90, .18); }
+.gemini-input .diagram-line { stroke: rgba(191, 201, 235, .75); stroke-width: 2; fill: none; stroke-linecap: round; }
+.gemini-input .diagram-label { fill: #eaf1ff; font-size: 13px; font-weight: 700; }
+.gemini-input .diagram-label.short { font-size: 11px; }
 .gemini-modal .modal-actions .button { min-height: 42px; padding: 0 16px; font-size: 13px; }
 .gemini-error { padding: 9px; color: #ffb2b6; border: 1px solid rgba(255, 103, 122, .25); border-radius: 6px; background: rgba(239, 77, 95, .1); font-size: 10px; overflow-wrap: anywhere; }
 .notes-list { margin: 16px 0 4px; display: grid; gap: 9px; }
