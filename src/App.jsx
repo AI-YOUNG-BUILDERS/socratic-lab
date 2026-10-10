@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
+
+const STORAGE_KEY = 'socraticlab-demo-v1'
 
 function Icon({ name, size = 16 }) {
   const paths = {
@@ -39,32 +41,247 @@ const tracks = [
   { icon: 'tree', type: 'MATHEMATICS FOR AI', title: 'Linear Algebra for ML', desc: 'Eigenvectors, matrix decompositions, transformation null spaces.', progress: 60, verified: '15/25 Verified Concepts', student: 'Julian', next: 'Vector Projections', flag: '1 Unresolved Analogy', flagType: 'gold' },
 ]
 
-const sessions = [
-  { title: 'Stacks vs Heap Memory Allocation', track: 'Data Structures', persona: 'Theo (Peer, Lv. 2)', status: 'Mastered (94%)', state: 'good', duration: '18m 42s', output: '3 intuitive analogies verified' },
-  { title: 'Binary Search Tree Inversions', track: 'Algorithms', persona: 'Maya (Skeptic, Lv. 3)', status: 'Needs Review (1 Gap)', state: 'needs-review', duration: '24m 10s', output: 'Induction gap detected on edge cases' },
-  { title: 'Virtual Memory & Paging Tables', track: 'Operating Systems', persona: 'Theo (Peer, Lv. 2)', status: 'Mastered (91%)', state: 'good', duration: '32m 05s', output: 'Zero argument fallacies awarded' },
+const initialData = {
+  sessions: [
+    { id: 'seed-1', title: 'Stacks vs Heap Memory Allocation', track: 'Data Structures', persona: 'Theo (Peer, Lv. 2)', status: 'Mastered (94%)', state: 'good', duration: '18m 42s', output: '3 intuitive analogies verified' },
+    { id: 'seed-2', title: 'Binary Search Tree Inversions', track: 'Algorithms', persona: 'Maya (Skeptic, Lv. 3)', status: 'Needs Review (1 Gap)', state: 'needs-review', duration: '24m 10s', output: 'Induction gap detected on edge cases' },
+    { id: 'seed-3', title: 'Virtual Memory & Paging Tables', track: 'Operating Systems', persona: 'Theo (Peer, Lv. 2)', status: 'Mastered (91%)', state: 'good', duration: '32m 05s', output: 'Zero argument fallacies awarded' },
+  ],
+  inquiryReplies: {},
+  trackProgress: {},
+  persona: 'Curious Peer (Lv. 2)',
+}
+
+function loadDemoData() {
+  try {
+    const saved = window.localStorage.getItem(STORAGE_KEY)
+    if (!saved) return initialData
+    const parsed = JSON.parse(saved)
+    if (!Array.isArray(parsed.sessions) || !parsed.inquiryReplies || !parsed.trackProgress) {
+      throw new Error('Saved demo data has an invalid shape.')
+    }
+    return {
+      ...initialData,
+      ...parsed,
+      sessions: parsed.sessions,
+      inquiryReplies: parsed.inquiryReplies,
+      trackProgress: parsed.trackProgress,
+    }
+  } catch (error) {
+    console.error('Could not load SocraticLab demo data from localStorage.', error)
+    return initialData
+  }
+}
+
+const inquiries = [
+  {
+    id: 'theo-memory-leak',
+    name: 'Theo (Curious Peer • Lv. 2)',
+    persona: 'Theo (Peer, Lv. 2)',
+    topic: 'C++ POINTERS & MEMORY',
+    question: 'Alex, what actually happens to the stack pointer when a function returns without calling delete on raw allocated memory?',
+    track: 'Data Structures & Algorithms',
+    concept: 'Pointers & Heap Memory',
+    age: '12m ago',
+  },
+  {
+    id: 'maya-deadlock',
+    name: 'Maya (Skeptical Interlocutor • Lv. 3)',
+    persona: 'Maya (Skeptic, Lv. 3)',
+    topic: 'OPERATING SYSTEMS CONCURRENCY',
+    question: 'Can a deadlock occur if both threads acquire their nested mutexes in the exact same strict hierarchical order? Prove it.',
+    track: 'OS & Concurrency',
+    concept: 'Mutex Deadlocks',
+    age: '1h ago',
+  },
 ]
 
+const personas = ['Curious Peer (Lv. 2)', 'Skeptical Interlocutor (Lv. 3)', 'Friendly Beginner (Lv. 1)']
+
+function getTrackTitle(trackName) {
+  if (/^(data structures|algorithms)$/i.test(trackName)) return tracks[0].title
+  if (/^(operating systems|os & concurrency)$/i.test(trackName)) return tracks[1].title
+  if (/^linear algebra/i.test(trackName)) return tracks[2].title
+  return tracks.find((track) => track.title === trackName)?.title ?? tracks[0].title
+}
+
 function App() {
+  const [data, setData] = useState(loadDemoData)
   const [activeNav, setActiveNav] = useState('Learning Hub')
   const [notice, setNotice] = useState('')
+  const [modal, setModal] = useState(null)
+  const [sessionForm, setSessionForm] = useState({ concept: '', track: tracks[0].title, persona: personas[0] })
+  const [reply, setReply] = useState('')
+  const [geminiPrompt, setGeminiPrompt] = useState('')
+  const [geminiQuestion, setGeminiQuestion] = useState('')
+  const [geminiAnswer, setGeminiAnswer] = useState('')
+  const [geminiError, setGeminiError] = useState('')
+  const [geminiLoading, setGeminiLoading] = useState(false)
+  const noticeTimer = useRef(null)
+
+  useEffect(() => () => window.clearTimeout(noticeTimer.current), [])
+
+  useEffect(() => {
+    if (!modal) return undefined
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setModal(null)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [modal])
 
   const showNotice = (message) => {
+    window.clearTimeout(noticeTimer.current)
     setNotice(message)
-    window.setTimeout(() => setNotice(''), 3000)
+    noticeTimer.current = window.setTimeout(() => setNotice(''), 3200)
+  }
+
+  const saveData = (nextData, message) => {
+    setData(nextData)
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextData))
+      if (message) showNotice(message)
+    } catch (error) {
+      console.error('Could not save SocraticLab demo data to localStorage.', error)
+      showNotice('Hindi na-save sa browser. Subukang magbakante ng storage at ulitin.')
+    }
+  }
+
+  const startSession = (defaults = {}) => {
+    setSessionForm({
+      concept: defaults.concept ?? '',
+      track: defaults.track ?? tracks[0].title,
+      persona: defaults.persona ?? data.persona,
+    })
+    setModal({ type: 'session' })
+  }
+
+  const openInquiry = (inquiry) => {
+    setReply(data.inquiryReplies[inquiry.id] ?? '')
+    setModal({ type: 'inquiry', inquiry })
+  }
+
+  const openGemini = () => {
+    setGeminiPrompt('')
+    setGeminiQuestion('')
+    setGeminiAnswer('')
+    setGeminiError('')
+    setModal({ type: 'gemini' })
+  }
+
+  const askGemini = async (event) => {
+    event.preventDefault()
+    const prompt = geminiPrompt.trim()
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+    if (!prompt || geminiLoading) return
+    if (!apiKey) {
+      setGeminiError('Walang API key. Ilagay ang VITE_GEMINI_API_KEY sa .env.local at i-restart ang dev server.')
+      return
+    }
+
+    setGeminiLoading(true)
+    setGeminiError('')
+    setGeminiQuestion(prompt)
+    setGeminiAnswer('')
+    try {
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: 'You are a helpful Socratic study partner. Explain concepts clearly, ask thoughtful questions when useful, and do not claim to be a human.' }],
+          },
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 700 },
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.error?.message ?? `Gemini API request failed (${response.status}).`)
+      }
+      const answer = result.candidates?.[0]?.content?.parts
+        ?.map((part) => part.text)
+        .filter(Boolean)
+        .join('\n')
+      if (!answer) throw new Error('Walang text response mula sa Gemini. Subukan ulit gamit ang ibang tanong.')
+      setGeminiAnswer(answer)
+      setGeminiPrompt('')
+    } catch (error) {
+      console.error('Gemini request failed.', error)
+      setGeminiError(error instanceof Error ? error.message : 'Hindi makakonekta sa Gemini. Suriin ang network at subukan ulit.')
+    } finally {
+      setGeminiLoading(false)
+    }
+  }
+
+  const submitSession = (event) => {
+    event.preventDefault()
+    const concept = sessionForm.concept.trim()
+    if (!concept) return
+
+    const track = tracks.find((item) => item.title === sessionForm.track)
+    const session = {
+      id: `session-${Date.now()}`,
+      title: concept,
+      track: track?.title ?? sessionForm.track,
+      persona: sessionForm.persona,
+      status: 'Mastered (88%)',
+      state: 'good',
+      duration: '12m 00s',
+      output: 'First-principles explanation saved locally',
+      createdAt: new Date().toISOString(),
+    }
+    const nextData = {
+      ...data,
+      sessions: [session, ...data.sessions],
+      trackProgress: {
+        ...data.trackProgress,
+        [session.track]: Math.min(100, (data.trackProgress[session.track] ?? track?.progress ?? 0) + 3),
+      },
+    }
+    setModal(null)
+    saveData(nextData, `Session complete! Na-save ang "${concept}" sa demo log.`)
+  }
+
+  const submitReply = (event) => {
+    event.preventDefault()
+    const answer = reply.trim()
+    if (!answer || modal?.type !== 'inquiry') return
+    const inquiry = modal.inquiry
+    saveData({
+      ...data,
+      inquiryReplies: { ...data.inquiryReplies, [inquiry.id]: answer },
+    }, `Na-save ang sagot mo kay ${inquiry.name.split(' ')[0]}.`)
+    setModal(null)
+  }
+
+  const cyclePersona = () => {
+    const currentIndex = personas.indexOf(data.persona)
+    const nextPersona = personas[(currentIndex + 1) % personas.length]
+    saveData({ ...data, persona: nextPersona }, `AI persona: ${nextPersona}.`)
   }
 
   const exportLogs = () => {
     const rows = [['Concept taught', 'Track', 'AI persona', 'Diagnostic state', 'Duration', 'Pedagogical output']]
-    sessions.forEach((session) => rows.push([session.title, session.track, session.persona, session.status, session.duration, session.output]))
-    const csv = rows.map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(',')).join('\n')
+    data.sessions.forEach((session) => rows.push([session.title, session.track, session.persona, session.status, session.duration, session.output]))
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(',')).join('\n')
     const link = document.createElement('a')
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
     link.download = 'socraticlab-teaching-sessions.csv'
     link.click()
     window.setTimeout(() => URL.revokeObjectURL(link.href), 1000)
-    showNotice('Teaching session log exported.')
+    showNotice('Na-export ang kasalukuyang teaching session log.')
   }
+
+  const navItems = [
+    ['Learning Hub', 'book', '#home'],
+    ['Socratic Studio', 'spark', '#tracks'],
+    ['Concept Trees & Mastery', 'network', '#concept-graph'],
+    ['Pedagogical Jargon Insights', 'brain', '#insights'],
+  ]
 
   return (
     <div className="app-shell">
@@ -75,16 +292,11 @@ function App() {
         </a>
         <nav aria-label="Study perspectives" className="sidebar-nav">
           <p className="nav-heading">STUDY PERSPECTIVES</p>
-          {[
-            ['Learning Hub', 'book'],
-            ['Socratic Studio', 'spark'],
-            ['Concept Trees & Mastery', 'network'],
-            ['Pedagogical Jargon Insights', 'brain'],
-          ].map(([item, icon]) => (
+          {navItems.map(([item, icon, href]) => (
             <a
               key={item}
               className={`nav-link ${activeNav === item ? 'selected' : ''}`}
-              href={item === 'Concept Trees & Mastery' ? '#concept-graph' : '#home'}
+              href={href}
               onClick={() => setActiveNav(item)}
             >
               <Icon name={icon} size={14} /><span>{item}</span>
@@ -93,8 +305,8 @@ function App() {
         </nav>
         <div className="persona">
           <p className="nav-heading">TARGET AI PERSONA</p>
-          <button type="button" className="persona-button" onClick={() => showNotice('Persona set to Curious Peer (Lv. 2).')}>
-            <span>Curious Peer (Lv. 2)</span><b>Adaptive</b>
+          <button type="button" className="persona-button" onClick={cyclePersona} title="Click to switch AI persona">
+            <span>{data.persona}</span><b>Change</b>
           </button>
         </div>
         <div className="health-card">
@@ -108,10 +320,10 @@ function App() {
         <header className="topbar">
           <div className="topic-pill"><small>ACTIVE TOPIC</small><span>Pointers &amp; Dynamic Memory in C++</span></div>
           <div className="topbar-pill streak"><Icon name="flame" size={13} /><span><b>4-Day Streak</b></span></div>
-          <div className="topbar-pill saved"><span className="save-dot" /><b>Draft Saved</b></div>
+          <div className="topbar-pill saved"><span className="save-dot" /><b>Local Demo · Saved</b></div>
           <div className="topic-pill secondary-topic"><small>ACTIVE TOPIC</small><span>Pointers &amp; Dynamic Memory in C++</span></div>
           <div className="topbar-pill streak secondary-streak"><Icon name="flame" size={13} /><span><b>4-Day Streak</b></span></div>
-          <div className="topbar-pill saved"><span className="save-dot" /><b>Draft Saved</b></div>
+          <div className="topbar-pill saved"><span className="save-dot" /><b>Local Demo · Saved</b></div>
         </header>
 
         <div className="dashboard">
@@ -121,41 +333,41 @@ function App() {
               <h1>Welcome back, Alex!</h1>
               <p>Your AI agents are ready for today’s sessions. Try to master a concept, teach it from first principles.</p>
               <div className="welcome-actions">
-                <button className="button primary" type="button" onClick={() => showNotice('New teaching session ready. Choose a subject track to begin.')}>＋ Start New Teaching Session</button>
-                <button className="button quiet" type="button" onClick={() => showNotice('Resuming: Pointers & Heap Memory (Theo).') }><Icon name="play" size={12} /> Resume: Pointers &amp; Heap Memory (Theo)</button>
+                <button className="button primary" type="button" onClick={() => startSession()}>＋ Start New Teaching Session</button>
+                <button className="button quiet" type="button" onClick={() => startSession({ concept: 'Pointers & Heap Memory', track: tracks[0].title })}><Icon name="play" size={12} /> Resume: Pointers &amp; Heap Memory (Theo)</button>
+                <button className="button quiet" type="button" onClick={openGemini}><Icon name="spark" size={12} /> Ask Gemini</button>
               </div>
             </div>
             <div className="welcome-metrics">
-              <div className="metric-card streak-metric"><span className="metric-icon flame"><Icon name="flame" size={17} /></span><div><strong>7-Day Streak</strong><small><b>840 XP</b> · 14 Concepts Verified</small></div></div>
-              <div className="metric-card level-metric"><span className="metric-icon rocket"><Icon name="rocket" size={17} /></span><div><strong>BANKaiTive Engine (Lv. 4)</strong><div className="xp-bar"><span /></div><small>320 XP to Lv. 5</small></div></div>
+              <div className="metric-card streak-metric"><span className="metric-icon flame"><Icon name="flame" size={17} /></span><div><strong>7-Day Streak</strong><small><b>{840 + Math.max(0, data.sessions.length - initialData.sessions.length) * 50} XP</b> · {14 + Math.max(0, data.sessions.length - initialData.sessions.length)} Concepts Verified</small></div></div>
+              <div className="metric-card level-metric"><span className="metric-icon rocket"><Icon name="rocket" size={17} /></span><div><strong>BANKaiTive Engine (Lv. 4)</strong><div className="xp-bar"><span style={{ width: `${Math.min(100, 67 + Math.max(0, data.sessions.length - initialData.sessions.length) * 3)}%` }} /></div><small>320 XP to Lv. 5</small></div></div>
             </div>
             <span className="online-status"><i /> Cognitive Synthesis Engine Online</span>
           </section>
 
           <section className="inquiries-section">
             <div className="section-heading">
-              <h2><Icon name="person" size={16} /> Pending AI Peer Inquiries <span className="count-pill">2 Awaiting Socratic Answers</span></h2>
+              <h2><Icon name="person" size={16} /> Pending AI Peer Inquiries <span className="count-pill">{inquiries.filter((inquiry) => !data.inquiryReplies[inquiry.id]).length} Awaiting Socratic Answers</span></h2>
               <p>Responses calibrate AI student mastery models</p>
             </div>
             <div className="inquiry-grid">
-              <article className="inquiry-card theo-card">
-                <div className="peer-icon"><Icon name="person" size={19} /><i>!</i></div>
-                <div className="inquiry-content">
-                  <div className="inquiry-top"><strong>Theo (Curious Peer • Lv. 2)</strong><time>12m ago</time></div>
-                  <small className="topic-label">C++ POINTERS &amp; MEMORY</small>
-                  <p>“Alex, what actually happens to the stack pointer when a function returns without calling delete on raw allocated memory?”</p>
-                  <div className="inquiry-bottom"><span className="warning-text">◉ Clarification Needed: Memory Leaks</span><button type="button" className="button tiny-primary" onClick={() => showNotice('Opening Socratic reply studio for Theo.')}>Reply in Studio <Icon name="chevron" size={12} /></button></div>
-                </div>
-              </article>
-              <article className="inquiry-card maya-card">
-                <div className="peer-icon"><Icon name="person" size={19} /><i>✓</i></div>
-                <div className="inquiry-content">
-                  <div className="inquiry-top"><strong>Maya (Skeptical Interlocutor • Lv. 3)</strong><time>1h ago</time></div>
-                  <small className="topic-label">OPERATING SYSTEMS CONCURRENCY</small>
-                  <p>“Can a deadlock occur if both threads acquire their nested mutexes in the exact same strict hierarchical order? Prove it.”</p>
-                  <div className="inquiry-bottom"><span className="success-text">✓ Ready for Proof by Analogy</span><button type="button" className="button quiet tiny" onClick={() => showNotice('Starting a session with Maya.')}>Start Session <Icon name="chevron" size={12} /></button></div>
-                </div>
-              </article>
+              {inquiries.map((inquiry, index) => {
+                const answered = Boolean(data.inquiryReplies[inquiry.id])
+                return (
+                  <article className={`inquiry-card ${index === 0 ? 'theo-card' : 'maya-card'}`} key={inquiry.id}>
+                    <div className="peer-icon"><Icon name="person" size={19} /><i>{answered ? '✓' : index === 0 ? '!' : '✓'}</i></div>
+                    <div className="inquiry-content">
+                      <div className="inquiry-top"><strong>{inquiry.name}</strong><time>{answered ? 'Answered' : inquiry.age}</time></div>
+                      <small className="topic-label">{inquiry.topic}</small>
+                      <p>{answered ? `Your answer: “${data.inquiryReplies[inquiry.id]}”` : `“${inquiry.question}”`}</p>
+                      <div className="inquiry-bottom">
+                        <span className={answered || index === 1 ? 'success-text' : 'warning-text'}>{answered ? '✓ Answer saved on this device' : index === 0 ? '◉ Clarification Needed: Memory Leaks' : '✓ Ready for Proof by Analogy'}</span>
+                        <button type="button" className={`button ${index === 0 && !answered ? 'tiny-primary' : 'quiet tiny'}`} onClick={() => openInquiry(inquiry)}>{answered ? 'Edit Answer' : index === 0 ? 'Reply in Studio' : 'Answer'} <Icon name="chevron" size={12} /></button>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
             </div>
           </section>
 
@@ -165,18 +377,21 @@ function App() {
               <a className="view-all" href="#tracks">VIEW ALL SUBJECTS <Icon name="arrow" size={12} /></a>
             </div>
             <div className="track-grid">
-              {tracks.map((track) => (
-                <article className="track-card" key={track.title}>
-                  <div className="track-card-top"><span className={`track-icon ${track.icon}`}><Icon name={track.icon} size={18} /></span><span className={`track-flag ${track.flagType}`}>{track.flag}</span></div>
-                  <small className="track-type">{track.type}</small>
-                  <h3>{track.title}</h3>
-                  <p className="track-description">{track.desc}</p>
-                  <div className="mastery-label"><span>Mastery Score</span><b>{track.progress}% Verified</b></div>
-                  <div className="mastery-bar"><span style={{ width: `${track.progress}%` }} /></div>
-                  <p className="verified-count">{track.verified}<span> AI Student: {track.student}</span></p>
-                  <div className="track-next"><span><small>Next In Line</small><b>{track.next}</b></span><button type="button" className="button quiet tiny" onClick={() => showNotice(`Entering ${track.title} studio.`)}>Enter Studio</button></div>
-                </article>
-              ))}
+              {tracks.map((track) => {
+                const progress = data.trackProgress[track.title] ?? track.progress
+                return (
+                  <article className="track-card" key={track.title}>
+                    <div className="track-card-top"><span className={`track-icon ${track.icon}`}><Icon name={track.icon} size={18} /></span><span className={`track-flag ${track.flagType}`}>{track.flag}</span></div>
+                    <small className="track-type">{track.type}</small>
+                    <h3>{track.title}</h3>
+                    <p className="track-description">{track.desc}</p>
+                    <div className="mastery-label"><span>Mastery Score</span><b>{progress}% Verified</b></div>
+                    <div className="mastery-bar"><span style={{ width: `${progress}%` }} /></div>
+                    <p className="verified-count">{track.verified}<span> AI Student: {track.student}</span></p>
+                    <div className="track-next"><span><small>Next In Line</small><b>{track.next}</b></span><button type="button" className="button quiet tiny" onClick={() => startSession({ track: track.title, concept: track.next })}>Enter Studio</button></div>
+                  </article>
+                )
+              })}
             </div>
           </section>
 
@@ -198,10 +413,10 @@ function App() {
                 </div>
               ))}
             </div>
-            <div className="graph-footer"><span>Path: Foundations of Systems Architecture &gt; Memory Management</span><button className="button quiet tiny" type="button" onClick={() => showNotice('Interactive concept graph opened.')}>Open Full Interactive Concept Graph <Icon name="arrow" size={12} /></button></div>
+            <div className="graph-footer"><span>Path: Foundations of Systems Architecture &gt; Memory Management</span><button className="button quiet tiny" type="button" onClick={() => setModal({ type: 'graph' })}>Open Full Interactive Concept Graph <Icon name="arrow" size={12} /></button></div>
           </section>
 
-          <section className="sessions-section">
+          <section className="sessions-section" id="sessions">
             <div className="section-heading">
               <h2><Icon name="calendar" size={15} /> Recent Teaching Sessions (Feynman Log)</h2>
               <button type="button" className="export-button" onClick={exportLogs}>EXPORT LOGS <Icon name="download" size={12} /></button>
@@ -209,27 +424,101 @@ function App() {
             <div className="sessions-table-wrap">
               <table>
                 <thead><tr><th>CONCEPT TAUGHT</th><th>AI PERSONA</th><th>DIAGNOSTIC STATE</th><th>DURATION</th><th>PEDAGOGICAL OUTPUT</th><th>ACTIONS</th></tr></thead>
-                <tbody>{sessions.map((session, index) => (
-                  <tr key={session.title}>
+                <tbody>{data.sessions.map((session) => (
+                  <tr key={session.id}>
                     <td><strong>{session.title}</strong><small>Track: {session.track}</small></td>
-                    <td><span className={`persona-dot persona-${index}`} />{session.persona}</td>
+                    <td><span className="persona-dot" />{session.persona}</td>
                     <td><span className={`state-pill ${session.state}`}>{session.state === 'good' ? '✓' : '●'} {session.status}</span></td>
                     <td>{session.duration}</td>
                     <td className={session.state === 'needs-review' ? 'output-warning' : ''}>{session.output}</td>
-                    <td className="row-actions"><button type="button" onClick={() => showNotice(`Reviewing notes for ${session.title}.`)}>Review<br />Notes</button><button type="button" className={index === 1 ? 'emphasis' : ''} onClick={() => showNotice(index === 1 ? `Addressing the mastery gap in ${session.title}.` : `Re-teaching ${session.title}.`)}>{index === 1 ? <>Address<br />Gap</> : <>Re-<br />teach</>}</button></td>
+                    <td className="row-actions"><button type="button" onClick={() => setModal({ type: 'notes', session })}>Review<br />Notes</button><button type="button" className={session.state === 'needs-review' ? 'emphasis' : ''} onClick={() => startSession({ concept: session.title, track: getTrackTitle(session.track), persona: session.persona })}>{session.state === 'needs-review' ? <>Address<br />Gap</> : <>Re-<br />teach</>}</button></td>
                   </tr>
                 ))}</tbody>
               </table>
             </div>
           </section>
 
-          <section className="summary-stats" aria-label="Learning summary">
-            <article><span className="stat-icon pencil">✎</span><div><strong>89.2%</strong><small>Jargon-Free Simplicity Index</small></div></article>
+          <section className="summary-stats" id="insights" aria-label="Learning summary">
+            <article><span className="stat-icon pencil">✎</span><div><strong>{data.sessions.length > initialData.sessions.length ? '89.8%' : '89.2%'}</strong><small>Jargon-Free Simplicity Index</small></div></article>
             <article><span className="stat-icon pulse"><Icon name="pulse" size={19} /></span><div><strong>3.4x Faster</strong><small>Retention vs. Passive Reading</small></div></article>
-            <article><span className="stat-icon target"><Icon name="target" size={19} /></span><div><strong>38 Queries Solved</strong><small>AI Student Misconceptions Cleared</small></div></article>
+            <article><span className="stat-icon target"><Icon name="target" size={19} /></span><div><strong>{38 + Math.max(0, data.sessions.length - initialData.sessions.length)} Queries Solved</strong><small>AI Student Misconceptions Cleared</small></div></article>
           </section>
         </div>
       </main>
+
+      {modal && (
+        <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setModal(null) }}>
+          {modal.type === 'session' && (
+            <section className="demo-modal" role="dialog" aria-modal="true" aria-labelledby="session-modal-title">
+              <button className="modal-close" type="button" aria-label="Close" onClick={() => setModal(null)}>×</button>
+              <p className="eyebrow"><span className="ready-dot" /> LOCAL DEMO SESSION</p>
+              <h2 id="session-modal-title">Teach a concept</h2>
+              <p className="modal-description">Complete a sample first-principles session. Your result will appear in the log and stay in this browser.</p>
+              <form onSubmit={submitSession}>
+                <label htmlFor="session-concept">Concept to teach</label>
+                <input id="session-concept" autoFocus required maxLength={100} value={sessionForm.concept} onChange={(event) => setSessionForm({ ...sessionForm, concept: event.target.value })} placeholder="e.g. How pointers work" />
+                <label htmlFor="session-track">Subject track</label>
+                <select id="session-track" value={sessionForm.track} onChange={(event) => setSessionForm({ ...sessionForm, track: event.target.value })}>
+                  {tracks.map((track) => <option key={track.title} value={track.title}>{track.title}</option>)}
+                </select>
+                <label htmlFor="session-persona">AI student</label>
+                <select id="session-persona" value={sessionForm.persona} onChange={(event) => setSessionForm({ ...sessionForm, persona: event.target.value })}>
+                  {personas.map((persona) => <option key={persona} value={persona}>{persona}</option>)}
+                  {!personas.includes(sessionForm.persona) && <option value={sessionForm.persona}>{sessionForm.persona}</option>}
+                </select>
+                <div className="modal-actions"><button className="button quiet" type="button" onClick={() => setModal(null)}>Cancel</button><button className="button primary" type="submit">Finish demo session</button></div>
+              </form>
+            </section>
+          )}
+          {modal.type === 'gemini' && (
+            <section className="demo-modal gemini-modal" role="dialog" aria-modal="true" aria-labelledby="gemini-modal-title">
+              <button className="modal-close" type="button" aria-label="Close" onClick={() => setModal(null)}>×</button>
+              <p className="eyebrow"><span className="ready-dot" /> GEMINI STUDY PARTNER</p>
+              <h2 id="gemini-modal-title">Ask Gemini</h2>
+              <p className="modal-description">Ask a study question and get a live response from Gemini Flash.</p>
+              {geminiQuestion && <div className="gemini-question"><b>You</b><p>{geminiQuestion}</p></div>}
+              {geminiAnswer && <div className="gemini-answer"><b>Gemini</b><p>{geminiAnswer}</p></div>}
+              {geminiError && <p className="gemini-error" role="alert">{geminiError}</p>}
+              <form onSubmit={askGemini}>
+                <label htmlFor="gemini-prompt">Your question</label>
+                <textarea id="gemini-prompt" autoFocus required maxLength={2000} rows={3} value={geminiPrompt} onChange={(event) => setGeminiPrompt(event.target.value)} placeholder="e.g. Explain stack vs heap memory with an analogy..." />
+                <div className="modal-actions"><button className="button quiet" type="button" onClick={() => setModal(null)}>Close</button><button className="button primary" type="submit" disabled={geminiLoading || !geminiPrompt.trim()}>{geminiLoading ? 'Thinking...' : 'Send to Gemini'}</button></div>
+              </form>
+            </section>
+          )}
+          {modal.type === 'inquiry' && (
+            <section className="demo-modal" role="dialog" aria-modal="true" aria-labelledby="reply-modal-title">
+              <button className="modal-close" type="button" aria-label="Close" onClick={() => setModal(null)}>×</button>
+              <p className="eyebrow"><span className="ready-dot" /> SOCRATIC REPLY STUDIO</p>
+              <h2 id="reply-modal-title">Reply to {modal.inquiry.name.split(' ')[0]}</h2>
+              <p className="modal-question">“{modal.inquiry.question}”</p>
+              <form onSubmit={submitReply}>
+                <label htmlFor="inquiry-reply">Your explanation</label>
+                <textarea id="inquiry-reply" autoFocus required maxLength={500} rows={5} value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Explain it in your own words..." />
+                <div className="modal-actions"><button className="button quiet" type="button" onClick={() => setModal(null)}>Cancel</button><button className="button primary" type="submit">Save answer</button></div>
+              </form>
+            </section>
+          )}
+          {modal.type === 'notes' && (
+            <section className="demo-modal" role="dialog" aria-modal="true" aria-labelledby="notes-modal-title">
+              <button className="modal-close" type="button" aria-label="Close" onClick={() => setModal(null)}>×</button>
+              <p className="eyebrow"><span className="ready-dot" /> FEYNMAN SESSION NOTES</p>
+              <h2 id="notes-modal-title">{modal.session.title}</h2>
+              <dl className="notes-list"><div><dt>Track</dt><dd>{modal.session.track}</dd></div><div><dt>AI student</dt><dd>{modal.session.persona}</dd></div><div><dt>Result</dt><dd>{modal.session.status}</dd></div><div><dt>Teaching insight</dt><dd>{modal.session.output}</dd></div></dl>
+              <div className="modal-actions"><button className="button quiet" type="button" onClick={() => setModal(null)}>Close</button><button className="button primary" type="button" onClick={() => startSession({ concept: modal.session.title, track: getTrackTitle(modal.session.track), persona: modal.session.persona })}>Re-teach this concept</button></div>
+            </section>
+          )}
+          {modal.type === 'graph' && (
+            <section className="demo-modal" role="dialog" aria-modal="true" aria-labelledby="graph-modal-title">
+              <button className="modal-close" type="button" aria-label="Close" onClick={() => setModal(null)}>×</button>
+              <p className="eyebrow"><span className="ready-dot" /> MASTERY GRAPH</p>
+              <h2 id="graph-modal-title">Your concept path</h2>
+              <p className="modal-description">Start with pointers, connect stack and heap behavior, then revisit memory leaks before moving on to smart pointers.</p>
+              <div className="modal-actions"><button className="button quiet" type="button" onClick={() => setModal(null)}>Close</button><button className="button primary" type="button" onClick={() => startSession({ concept: 'Memory Leaks', track: tracks[0].title })}>Practice Memory Leaks</button></div>
+            </section>
+          )}
+        </div>
+      )}
       {notice && <div className="toast" role="status">{notice}</div>}
     </div>
   )
